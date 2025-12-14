@@ -14,8 +14,6 @@ export function Header() {
   const [opened, { toggle }] = useDisclosure(false);
   const [active, setActive] = useState(links[0].link);
 
-  const x = 3;
-
   const items = links.map((link) => (
     <a
       key={link.label}

@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router";
-import App from "../../App";
-import NotFoundPage from "../../../pages/notFound/NotFoundPage";
+import App from "@/app/App";
+import NotFoundPage from "@/pages/notFound/NotFoundPage";
 
 export const router = createBrowserRouter([
   {
@@ -10,14 +10,14 @@ export const router = createBrowserRouter([
       {
         path: "/auth",
         lazy: async () => {
-          const { AuthPage } = await import("../../../pages/auth/AuthPage");
+          const { AuthPage } = await import("@/pages/auth/AuthPage");
           return { Component: AuthPage };
         },
       },
       {
-        path: "/main",
+        path: "/maisn",
         lazy: async () => {
-          const { MainPage } = await import("../../../pages/main/MainPage");
+          const { MainPage } = await import("@/pages/main/MainPage");
           return { Component: MainPage };
         },
       },
