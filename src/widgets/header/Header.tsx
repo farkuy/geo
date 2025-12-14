@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Burger, Container, Group } from "@mantine/core";
+import {
+  Burger,
+  Button,
+  Container,
+  Group,
+  useMantineColorScheme,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import classes from "./Header.module.css";
 
@@ -13,6 +19,7 @@ const links = [
 export function Header() {
   const [opened, { toggle }] = useDisclosure(false);
   const [active, setActive] = useState(links[0].link);
+  const { setColorScheme } = useMantineColorScheme();
 
   const items = links.map((link) => (
     <a
@@ -35,7 +42,8 @@ export function Header() {
         <Group gap={5} visibleFrom="xs">
           {items}
         </Group>
-
+        <Button onClick={() => setColorScheme("light")}>Light</Button>
+        <Button onClick={() => setColorScheme("dark")}>Dark</Button>
         <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
       </Container>
     </header>

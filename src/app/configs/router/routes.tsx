@@ -15,7 +15,7 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "/maisn",
+        path: "/main",
         lazy: async () => {
           const { MainPage } = await import("@/pages/main/MainPage");
           return { Component: MainPage };
