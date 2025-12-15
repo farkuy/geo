@@ -8,32 +8,31 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import classes from "./Header.module.css";
+import { Link, useLocation } from "react-router";
 
 const links = [
-  { link: "/about", label: "Features" },
-  { link: "/pricing", label: "Pricing" },
-  { link: "/learn", label: "Learn" },
-  { link: "/community", label: "Community" },
+  { link: "/main", label: "MainPage" },
+  { link: "/projects", label: "ProjectsPage" },
 ];
 
 export function Header() {
-  const [opened, { toggle }] = useDisclosure(false);
-  const [active, setActive] = useState(links[0].link);
   const { setColorScheme } = useMantineColorScheme();
+  const [opened, { toggle }] = useDisclosure(false);
+  const { pathname } = useLocation();
+  const [active, setActive] = useState(pathname ?? links[0].link);
 
   const items = links.map((link) => (
-    <a
+    <Link
       key={link.label}
-      href={link.link}
+      to={link.link}
       className={classes.link}
-      data-active={active === link.link || undefined}
-      onClick={(event) => {
-        event.preventDefault();
+      data-active={active === link?.link || undefined}
+      onClick={() => {
         setActive(link.link);
       }}
     >
       {link.label}
-    </a>
+    </Link>
   ));
 
   return (
