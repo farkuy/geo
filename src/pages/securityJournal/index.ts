@@ -1,0 +1,1 @@
+export { SecurityJournalPage } from "./SecurityJournalPage";

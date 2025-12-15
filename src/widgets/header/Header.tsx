@@ -1,29 +1,24 @@
 import { useState } from "react";
-import {
-  Burger,
-  Button,
-  Container,
-  Group,
-  useMantineColorScheme,
-} from "@mantine/core";
+import { Burger, Container, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import classes from "./Header.module.css";
 import { Link, useLocation } from "react-router";
+import { ProfileMenu } from "./components/index";
 
 const links = [
-  { link: "/main", label: "MainPage" },
-  { link: "/projects", label: "ProjectsPage" },
+  { link: "/main", label: "Главная" },
+  { link: "/projects", label: "Проекты" },
+  { link: "/security-journal", label: "Журнал событий ИБ" },
 ];
 
 export function Header() {
-  const { setColorScheme } = useMantineColorScheme();
   const [opened, { toggle }] = useDisclosure(false);
   const { pathname } = useLocation();
   const [active, setActive] = useState(pathname ?? links[0].link);
 
   const items = links.map((link) => (
     <Link
-      key={link.label}
+      key={link.link}
       to={link.link}
       className={classes.link}
       data-active={active === link?.link || undefined}
@@ -41,9 +36,8 @@ export function Header() {
         <Group gap={5} visibleFrom="xs">
           {items}
         </Group>
-        <Button onClick={() => setColorScheme("light")}>Light</Button>
-        <Button onClick={() => setColorScheme("dark")}>Dark</Button>
         <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
+        <ProfileMenu />
       </Container>
     </header>
   );

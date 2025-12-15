@@ -9,13 +9,6 @@ export const router = createBrowserRouter([
     Component: App,
     children: [
       {
-        path: "auth",
-        lazy: async () => {
-          const { AuthPage } = await import("@/pages/auth/AuthPage");
-          return { Component: AuthPage };
-        },
-      },
-      {
         path: "main",
         lazy: async () => {
           const { MainPage } = await import("@/pages/main/MainPage");
@@ -30,7 +23,22 @@ export const router = createBrowserRouter([
           return { Component: ProjectsPage };
         },
       },
+      {
+        path: "security-journal",
+        lazy: async () => {
+          const { SecurityJournalPage } =
+            await import("@/pages/securityJournal/SecurityJournalPage");
+          return { Component: SecurityJournalPage };
+        },
+      },
     ],
+  },
+  {
+    path: "/auth",
+    lazy: async () => {
+      const { AuthPage } = await import("@/pages/auth/AuthPage");
+      return { Component: AuthPage };
+    },
   },
   { path: "*", Component: NotFoundPage },
 ]);
