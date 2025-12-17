@@ -1,8 +1,8 @@
 import { createBrowserRouter } from "react-router";
 import App from "@/app/App";
-import NotFoundPage from "@/pages/notFound/NotFoundPage";
+import { ProjectsPage } from "@/pages/projects";
 
-//TODO: добавить типизацию для путей
+//TODO: добавить типизацию для путей и убрать ленивую подгрузку
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -40,5 +40,5 @@ export const router = createBrowserRouter([
       return { Component: AuthPage };
     },
   },
-  { path: "*", Component: NotFoundPage },
+  { path: "*", Component: ProjectsPage },
 ]);

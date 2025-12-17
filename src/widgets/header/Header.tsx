@@ -36,7 +36,6 @@ export function Header() {
         <Group gap={5} visibleFrom="xs">
           {items}
         </Group>
-        <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
         <ProfileMenu />
       </Container>
     </header>
