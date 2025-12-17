@@ -7,5 +7,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("install", async (event) => {
   await indexBd.openBd();
-  event.waitUntil(swBuilder.addResourcesToCache([]));
+  event.waitUntil(
+    swBuilder.addResourcesToCache(["./index.html", "@mantine/core/styles.css"]),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  event.respondWith(swBuilder.networkWrapper(event.request, event));
 });

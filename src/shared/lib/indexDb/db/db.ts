@@ -3,6 +3,7 @@ import { creatableTables } from "../config/creatableTables";
 export class IndexBd {
   private _storeName = "geo_db";
   private _version = 1;
+
   db: IDBDatabase;
 
   get version() {
