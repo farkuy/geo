@@ -1,3 +1,4 @@
+/*
 import axios from "axios";
 
 export const $axios = axios.create({
@@ -7,3 +8,4 @@ export const $axios = axios.create({
   headers: { "Content-Type": "application/json", Accept: "application/json" },
   withCredentials: true,
 });
+*/

@@ -23,6 +23,7 @@ class SwBuilder {
     });
   }
 
+  // @ts-ignore
   async staticCacheOrNetwork(request: Request, event): Promise<Response> {
     const responseFromCache = await caches.match(request);
     if (responseFromCache) {
@@ -43,6 +44,7 @@ class SwBuilder {
     }
   }
 
+  // @ts-ignore
   async networkWrapper(request: Request, event): Promise<Response> {
     const path = new URL(request.url);
     let response: Response;

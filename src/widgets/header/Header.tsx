@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Burger, Container, Group } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { Container, Group } from "@mantine/core";
 import classes from "./Header.module.css";
 import { Link, useLocation } from "react-router";
 import { ProfileMenu } from "./components/index";
@@ -12,7 +11,6 @@ const links = [
 ];
 
 export function Header() {
-  const [opened, { toggle }] = useDisclosure(false);
   const { pathname } = useLocation();
   const [active, setActive] = useState(pathname ?? links[0].link);
 

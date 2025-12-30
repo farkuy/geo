@@ -19,6 +19,8 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
-    rules: {},
+    rules: {
+      "no-cycle": "error",
+    },
   },
 ]);

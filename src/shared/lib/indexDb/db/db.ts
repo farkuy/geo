@@ -4,6 +4,7 @@ export class IndexBd {
   private _storeName = "geo_db";
   private _version = 1;
 
+  // @ts-ignore
   db: IDBDatabase;
 
   get version() {
