@@ -1,44 +1,34 @@
-import { createBrowserRouter } from "react-router";
 import App from "@/app/App";
 import { ProjectsPage } from "@/pages/projects";
+import { MainPage } from "@/pages/main/MainPage";
+import { SecurityJournalPage } from "@/pages/securityJournal";
+import { AuthPage } from "@/pages/auth/AuthPage";
+import { createBrowserRouter } from "react-router";
+import { authMiddleware } from "./middlewares";
 
-//TODO: добавить типизацию для путей и убрать ленивую подгрузку
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: App,
+    middleware: [authMiddleware],
     children: [
       {
         path: "main",
-        lazy: async () => {
-          const { MainPage } = await import("@/pages/main/MainPage");
-          return { Component: MainPage };
-        },
+        Component: MainPage,
       },
       {
         path: "projects",
-        lazy: async () => {
-          const { ProjectsPage } =
-            await import("@/pages/projects/ProjectsPage");
-          return { Component: ProjectsPage };
-        },
+        Component: ProjectsPage,
       },
       {
         path: "security-journal",
-        lazy: async () => {
-          const { SecurityJournalPage } =
-            await import("@/pages/securityJournal/SecurityJournalPage");
-          return { Component: SecurityJournalPage };
-        },
+        Component: SecurityJournalPage,
       },
     ],
   },
   {
     path: "/auth",
-    lazy: async () => {
-      const { AuthPage } = await import("@/pages/auth/AuthPage");
-      return { Component: AuthPage };
-    },
+    Component: AuthPage,
   },
   { path: "*", Component: ProjectsPage },
 ]);

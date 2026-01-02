@@ -12,7 +12,7 @@ const links = [
 
 export function Header() {
   const { pathname } = useLocation();
-  const [active, setActive] = useState(pathname ?? links[0].link);
+  const [active, setActive] = useState(pathname || links[0].link);
 
   const items = links.map((link) => (
     <Link
