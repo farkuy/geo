@@ -3,6 +3,7 @@ import {
   Checkbox,
   createTheme,
   Loader,
+  Progress,
   Select,
   Switch,
   Tabs,
@@ -51,6 +52,15 @@ export const theme = createTheme({
     }),
     Tabs: Tabs.extend({
       defaultProps: { variant: "pills" },
+    }),
+    Progress: Progress.extend({
+      defaultProps: {
+        orientation: "horizontal",
+        h: "100",
+        size: "lg",
+        radius: "lg",
+        striped: true,
+      },
     }),
   },
 });
