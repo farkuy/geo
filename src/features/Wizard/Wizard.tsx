@@ -1,24 +1,22 @@
-import { HeaderProcess } from "./components/index";
+import { HeaderProcess } from "./components";
 import { ComponentType, useState } from "react";
-import { WizardContext } from "./wizardContext";
+import { WizardContextProps } from "./wizardContext.type";
 import { Box } from "@mantine/core";
 
 interface WizardProps<T extends object> {
-  steps: ComponentType<WizardContext<T>>[];
+  steps: ComponentType<WizardContextProps<T>>[];
 }
 
 export const Wizard = <T extends object>(props: WizardProps<T>) => {
   const { steps } = props;
   const [stepNow, setStepNow] = useState(0);
-  const [data, setData] = useState<T>({});
+  const [data, setData] = useState<T>({} as T);
 
   const value = Math.ceil((stepNow / steps.length) * 100);
 
-  const changeData = (value: unknown) => {
-    setData({ ...data, value });
-    if (stepNow < steps.length) {
-      setStepNow((prev) => prev + 1);
-    }
+  const onNextStep = (value: object) => {
+    setData({ ...data, ...value });
+    setStepNow((prev) => prev + 1);
   };
 
   const StepNow = steps[stepNow];
@@ -30,7 +28,7 @@ export const Wizard = <T extends object>(props: WizardProps<T>) => {
         stepNumber={stepNow}
         maxStep={steps.length}
       />
-      <StepNow data={data} changeData={changeData} />
+      <StepNow wizardData={data} changeData={onNextStep} />
     </Box>
   );
 };
