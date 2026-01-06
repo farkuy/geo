@@ -11,24 +11,28 @@ import {
   Form3,
   Form3Data,
 } from "@/pages/securityJournal/components/Form3/Form3";
-import { useContext } from "react";
-import { WizardContext } from "@/features/Wizard/wizardContext.type";
 import { Button, Modal } from "@mantine/core";
+import { WizardHandle } from "@/features/Wizard/Wizard";
+import { useRef } from "react";
 
 export interface Test extends Form1Data, Form2Data {
   step3: Form3Data;
 }
 
 export const SecurityJournalPage = () => {
-  const { onPrevStep } = useContext(WizardContext);
+  const wizardRef = useRef<WizardHandle | null>(null);
 
   return (
     <Modal
       opened={true}
-      onClose={() => 3}
-      title={<Button onClick={onPrevStep}> назад ебана рот</Button>}
+      onClose={close}
+      title={
+        <Button variant="subtle" onClick={wizardRef.current?.prev}>
+          Назад
+        </Button>
+      }
     >
-      <Wizard<Test> steps={[Form1, Form2, Form3]} />
+      <Wizard<Test> ref={wizardRef} steps={[Form1, Form2, Form3]} />
     </Modal>
   );
 };
