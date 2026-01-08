@@ -2,17 +2,15 @@ import { creatableTables } from "../config/creatableTables";
 
 export class IndexBd {
   private _storeName = "geo_db";
+
+  //Использовать только целые числа (читай доку)
   private _version = 1;
 
   // @ts-ignore
   db: IDBDatabase;
 
-  get version() {
-    return this._version;
-  }
-
   async openBd(): Promise<void> {
-    let openRequest = indexedDB.open(this._storeName, this._version);
+    const openRequest = indexedDB.open(this._storeName, this._version);
 
     openRequest.onupgradeneeded = () => {
       const db = openRequest.result;
@@ -24,28 +22,43 @@ export class IndexBd {
           });
         }
       });
+
+      db.onversionchange = () => {
+        db?.close();
+        alert(
+          "Пожалуйста, обновите страницу, для синхронизации с новой версией приложения",
+        );
+      };
     };
 
-    //TODO: Добавить алерт для предупреждения о неработающей бд
     openRequest.onerror = () => {
+      alert(
+        "Произошла ошибка открытя базы данных, пожалуйста напишите разработчику",
+      );
       console.error("Error", openRequest.error);
     };
 
     openRequest.onsuccess = () => {
       this.db = openRequest.result;
     };
+
+    openRequest.onblocked = () => {
+      alert(
+        "Происходит обновнеие приложения. Пожалуйста, закройте другие вкладки сайта, если они у вас открыты",
+      );
+    };
   }
 
   async get(
-    storeName: string,
+    tableName: string,
     key: string,
     mode: IDBTransactionMode = "readonly",
-  ): Promise<IDBRequest<any>> {
-    const transaction = this.db?.transaction(storeName, mode);
-    const store = transaction.objectStore(storeName);
+  ): Promise<IDBRequest<unknown>> {
+    const transaction = this.db?.transaction(tableName, mode);
+    const store = transaction.objectStore(tableName);
 
+    const request = store.get(key);
     return new Promise((resolve, reject) => {
-      const request = store.get(key);
       request.onsuccess = () => {
         resolve(request.result);
       };
@@ -55,10 +68,14 @@ export class IndexBd {
     });
   }
 
-  async add(storeName: string, data: any): Promise<void> {
-    const transaction = this.db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-    const isHaveRow = await new Promise((resolve, reject) => {
+  async add<T extends { id: string }>(
+    tableName: string,
+    data: T,
+  ): Promise<void> {
+    const transaction = this.db.transaction(tableName, "readwrite");
+    const store = transaction.objectStore(tableName);
+
+    const isHaveRow: boolean = await new Promise((resolve, reject) => {
       const getRequest = store.get(data.id);
       getRequest.onsuccess = () => resolve(getRequest.result);
       getRequest.onerror = () => reject(getRequest.error);
@@ -69,6 +86,21 @@ export class IndexBd {
     } else {
       store.add(data);
     }
+  }
+
+  async delete(tableName: string, key: string): Promise<unknown> {
+    const transaction = this.db?.transaction(tableName, "readwrite");
+    const store = transaction.objectStore(tableName);
+
+    const request = store.delete(key);
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
   }
 }
 
