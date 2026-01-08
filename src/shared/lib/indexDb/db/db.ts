@@ -49,12 +49,8 @@ export class IndexBd {
     };
   }
 
-  async get(
-    tableName: string,
-    key: string,
-    mode: IDBTransactionMode = "readonly",
-  ): Promise<IDBRequest<unknown>> {
-    const transaction = this.db?.transaction(tableName, mode);
+  async get(tableName: string, key: string): Promise<IDBRequest<unknown>> {
+    const transaction = this.db?.transaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
 
     const request = store.get(key);
@@ -71,21 +67,29 @@ export class IndexBd {
   async add<T extends { id: string }>(
     tableName: string,
     data: T,
-  ): Promise<void> {
+  ): Promise<unknown> {
     const transaction = this.db.transaction(tableName, "readwrite");
     const store = transaction.objectStore(tableName);
 
-    const isHaveRow: boolean = await new Promise((resolve, reject) => {
-      const getRequest = store.get(data.id);
-      getRequest.onsuccess = () => resolve(getRequest.result);
-      getRequest.onerror = () => reject(getRequest.error);
+    const request = store.add(data);
+    return await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
     });
+  }
 
-    if (isHaveRow) {
-      store.put(data);
-    } else {
-      store.add(data);
-    }
+  async update<T extends { id: string }>(
+    tableName: string,
+    data: T,
+  ): Promise<unknown> {
+    const transaction = this.db.transaction(tableName, "readwrite");
+    const store = transaction.objectStore(tableName);
+
+    const request = store.put(data);
+    return await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
   }
 
   async delete(tableName: string, key: string): Promise<unknown> {
