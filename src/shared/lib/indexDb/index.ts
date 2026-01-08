@@ -1,1 +1,1 @@
-export { indexBd, IndexBd } from "./db/db";
+export { indexBd } from "./db/db";

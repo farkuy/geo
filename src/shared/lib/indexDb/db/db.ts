@@ -1,6 +1,6 @@
 import { creatableTables } from "../config/creatableTables";
 
-export class IndexBd {
+class IndexBd {
   private _storeName = "geo_db";
 
   //Использовать только целые числа (читай доку)
