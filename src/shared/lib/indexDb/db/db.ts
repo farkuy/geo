@@ -133,11 +133,8 @@ class IndexBd {
     });
   }
 
-  private async ensureDbOpen(): Promise<IDBDatabase> {
-    if (!this.db) {
-      return this.openBd();
-    }
-    return this.db;
+  private async ensureDbOpen(): Promise<void> {
+    if (!this.db) await this.openBd();
   }
 }
 
