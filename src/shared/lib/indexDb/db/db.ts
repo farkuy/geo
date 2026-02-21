@@ -1,26 +1,32 @@
 import { creatableTables } from "../config/creatableTables";
 
-type WithIdData<T extends object> = T & { id: string };
+type WithIdData<T extends Record<string, any>> = T & {
+  id: string;
+};
 
-/* TODO: 1) добавить атомарность (все или ничего для all методов, для консистентности данных)
+/* TODO: + 1) добавить атомарность (все или ничего для all методов, для консистентности данных)
  *       2) ПОдумать над возвращаемыми ошибками
+ *       3) Подумать над типизацией WithIdData и ошибок
+ *       4) Подмуть над передачей уникального ключа
  * */
 
 class IndexBd {
   // Использовать только целые числа для версии бд (читай доку)
   private _storeName = "geo_db";
   private _version = 1;
-  db: IDBDatabase | null = null;
+  private _db: IDBDatabase | null = null;
 
   async openBd(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       const openRequest = indexedDB.open(this._storeName, this._version);
 
       openRequest.onupgradeneeded = () => {
-        console.log("инициализация таблиц");
         const db = openRequest.result;
+
         creatableTables.forEach((tb) => {
           if (!db.objectStoreNames.contains(tb.name)) {
+            console.log(`инициализация таблицы ${tb.name}`);
+
             const table = db.createObjectStore(tb.name, tb.options);
             tb.rows.forEach((row) => {
               table.createIndex(row.name, row.keyPath, row.options);
@@ -43,9 +49,9 @@ class IndexBd {
       };
 
       openRequest.onsuccess = () => {
-        this.db = openRequest.result;
+        this._db = openRequest.result;
         console.log("бд открыта");
-        resolve(this.db);
+        resolve(this._db);
       };
 
       openRequest.onblocked = () => {
@@ -62,8 +68,8 @@ class IndexBd {
 
     const request = store.get(key);
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(request.error);
     });
   }
 
@@ -73,8 +79,8 @@ class IndexBd {
 
     const request = store.getAll();
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(request.error);
     });
   }
 
@@ -87,8 +93,8 @@ class IndexBd {
 
     const request = store.add(data);
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(request.error);
     });
   }
 
@@ -99,16 +105,16 @@ class IndexBd {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
-    return await Promise.all(
-      data.map(
-        (item) =>
-          new Promise<IDBValidKey>((resolve, reject) => {
-            const request = store.add(item);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          }),
-      ),
-    );
+    const result: IDBValidKey[] = [];
+    data.forEach((item) => {
+      const request = store.add(item);
+      request.onsuccess = () => result.push(request.result);
+    });
+
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve(result);
+      transaction.onerror = (eventInfo) => reject(eventInfo);
+    });
   }
 
   async put<D extends object>(
@@ -121,29 +127,28 @@ class IndexBd {
     //В put не нужен второй аргумент, т.к в creatableTables указан keyPath (ну если он указан)
     const request = store.put(data);
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(request.error);
     });
   }
 
   async putAll<D extends object>(
     tableName: string,
     data: WithIdData<D>[],
-  ): Promise<PromiseSettledResult<IDBValidKey>[]> {
+  ): Promise<IDBValidKey[]> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
-    //TODO: Если вдруг будут проблемы со старыми браузерами - добавить полифил для allSettled
-    return await Promise.allSettled(
-      data.map(
-        (item) =>
-          new Promise<IDBValidKey>((resolve, reject) => {
-            const request = store.put(item);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          }),
-      ),
-    );
+    const result: IDBValidKey[] = [];
+    data.forEach((item) => {
+      const request = store.put(item);
+      request.onsuccess = () => result.push(request.result);
+    });
+
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve(result);
+      transaction.onerror = (eventInfo) => reject(eventInfo);
+    });
   }
 
   async delete(tableName: string, key: string): Promise<void> {
@@ -152,13 +157,13 @@ class IndexBd {
 
     const request = store.delete(key);
     return new Promise((resolve, reject) => {
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(request.error);
     });
   }
 
   private async ensureDbOpen(): Promise<void> {
-    if (!this.db) await this.openBd();
+    if (!this._db) await this.openBd();
   }
 
   private async openTransaction(
@@ -167,7 +172,7 @@ class IndexBd {
     durability: IDBTransactionDurability = "strict",
   ): Promise<IDBTransaction> {
     await this.ensureDbOpen();
-    return this.db!.transaction(tableName, mode, { durability });
+    return this._db!.transaction(tableName, mode, { durability });
   }
 }
 
