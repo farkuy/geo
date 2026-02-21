@@ -1,6 +1,10 @@
 import { creatableTables } from "../config/creatableTables";
 
-type WithIdData<T = unknown> = T & { id: string };
+type WithIdData<T extends object> = T & { id: string };
+
+/* TODO: 1) добавить атомарность (все или ничего для all методов, для консистентности данных)
+ *       2) ПОдумать над возвращаемыми ошибками
+ * */
 
 class IndexBd {
   // Использовать только целые числа для версии бд (читай доку)
@@ -74,7 +78,10 @@ class IndexBd {
     });
   }
 
-  async add<D>(tableName: string, data: WithIdData<D>): Promise<IDBValidKey> {
+  async add<D extends object>(
+    tableName: string,
+    data: WithIdData<D>,
+  ): Promise<IDBValidKey> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
@@ -85,7 +92,7 @@ class IndexBd {
     });
   }
 
-  async addAll<D>(
+  async addAll<D extends object>(
     tableName: string,
     data: WithIdData<D>[],
   ): Promise<IDBValidKey[]> {
@@ -104,7 +111,10 @@ class IndexBd {
     );
   }
 
-  async put<D>(tableName: string, data: WithIdData<D>): Promise<IDBValidKey> {
+  async put<D extends object>(
+    tableName: string,
+    data: WithIdData<D>,
+  ): Promise<IDBValidKey> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
@@ -116,7 +126,7 @@ class IndexBd {
     });
   }
 
-  async putAll<D>(
+  async putAll<D extends object>(
     tableName: string,
     data: WithIdData<D>[],
   ): Promise<PromiseSettledResult<IDBValidKey>[]> {
