@@ -53,8 +53,7 @@ class IndexBd {
   }
 
   async get<R>(tableName: string, key: string): Promise<R> {
-    await this.ensureDbOpen();
-    const transaction = this.db!.transaction(tableName, "readonly");
+    const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
 
     const request = store.get(key);
@@ -65,8 +64,7 @@ class IndexBd {
   }
 
   async getAll<R>(tableName: string): Promise<R[]> {
-    await this.ensureDbOpen();
-    const transaction = this.db!.transaction(tableName, "readonly");
+    const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
 
     const request = store.getAll();
@@ -77,8 +75,7 @@ class IndexBd {
   }
 
   async add<D>(tableName: string, data: WithIdData<D>): Promise<IDBValidKey> {
-    await this.ensureDbOpen();
-    const transaction = this.db!.transaction(tableName, "readwrite");
+    const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
     const request = store.add(data);
@@ -92,15 +89,14 @@ class IndexBd {
     tableName: string,
     data: WithIdData<D>[],
   ): Promise<IDBValidKey[]> {
-    await this.ensureDbOpen();
-    const transaction = this.db!.transaction(tableName, "readwrite");
+    const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
     return await Promise.all(
       data.map(
         (item) =>
           new Promise<IDBValidKey>((resolve, reject) => {
-            const request = store.put(item); // put нужен на случай, если в массиве есть уже id, который уже хранится в бд
+            const request = store.add(item);
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
           }),
@@ -109,8 +105,7 @@ class IndexBd {
   }
 
   async put<D>(tableName: string, data: WithIdData<D>): Promise<IDBValidKey> {
-    await this.ensureDbOpen();
-    const transaction = this.db!.transaction(tableName, "readwrite");
+    const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
     //В put не нужен второй аргумент, т.к в creatableTables указан keyPath (ну если он указан)
@@ -121,9 +116,28 @@ class IndexBd {
     });
   }
 
+  async putAll<D>(
+    tableName: string,
+    data: WithIdData<D>[],
+  ): Promise<PromiseSettledResult<IDBValidKey>[]> {
+    const transaction = await this.openTransaction(tableName);
+    const store = transaction.objectStore(tableName);
+
+    //TODO: Если вдруг будут проблемы со старыми браузерами - добавить полифил для allSettled
+    return await Promise.allSettled(
+      data.map(
+        (item) =>
+          new Promise<IDBValidKey>((resolve, reject) => {
+            const request = store.put(item);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          }),
+      ),
+    );
+  }
+
   async delete(tableName: string, key: string): Promise<void> {
-    await this.ensureDbOpen();
-    const transaction = this.db!.transaction(tableName, "readwrite");
+    const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
     const request = store.delete(key);
@@ -135,6 +149,15 @@ class IndexBd {
 
   private async ensureDbOpen(): Promise<void> {
     if (!this.db) await this.openBd();
+  }
+
+  private async openTransaction(
+    tableName: string,
+    mode: IDBTransactionMode = "readwrite",
+    durability: IDBTransactionDurability = "strict",
+  ): Promise<IDBTransaction> {
+    await this.ensureDbOpen();
+    return this.db!.transaction(tableName, mode, { durability });
   }
 }
 
