@@ -1,8 +1,6 @@
 import { creatableTables } from "../config/creatableTables";
 
-type WithIdData<T extends Record<string, any>> = T & {
-  id: string;
-};
+type WithIdData<T extends object> = T;
 
 /* TODO: + 1) добавить атомарность (все или ничего для all методов, для консистентности данных)
  *       2) ПОдумать над возвращаемыми ошибками
@@ -62,7 +60,13 @@ class IndexBd {
     });
   }
 
-  async get<R>(tableName: string, key: string): Promise<R> {
+  /**
+   * Поиск записи по первичному ключу (ID).
+   * @param tableName Имя objectStore (таблицы)
+   * @param key Первичный ключ записи (ID строки)
+   * @returns Найденную запись. Кидает ошибку, если запись не найдена или произошла ошибка
+   */
+  async getById<R>(tableName: string, key: string): Promise<R> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
 
@@ -73,6 +77,34 @@ class IndexBd {
     });
   }
 
+  /**
+   * Поиск записи по индексу (не primary key).
+   * @param tableName Имя objectStore (таблицы)
+   * @param indexName Имя индекса, созданного в onupgradeneeded (например, 'byEmail')
+   * @param key Значение для поиска в индексированном поле (например, 'user@example.com')
+   * @returns Найденную запись. Кидает ошибку, если запись не найдена или произошла ошибка
+   */
+  async getByIndex<R>(
+    tableName: string,
+    indexName: string,
+    key: string,
+  ): Promise<R> {
+    const transaction = await this.openTransaction(tableName, "readonly");
+    const store = transaction.objectStore(tableName);
+    const index = store.index(indexName);
+
+    const request = index.get(key);
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  /**
+   * Поиск записи по индексу (не primary key).
+   * @param tableName Имя objectStore (таблицы)
+   * @returns Найденные записи. Кидает ошибку, если записи не найдены или произошла ошибка
+   */
   async getAll<R>(tableName: string): Promise<R[]> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
@@ -84,6 +116,35 @@ class IndexBd {
     });
   }
 
+  /**
+   * Поиск всех записей по индексу (не primary key).
+   * @param tableName Имя objectStore (таблицы)
+   * @param indexName Имя индекса, созданного в onupgradeneeded (например, 'byEmail')
+   * @param key Значение для поиска в индексированном поле (например, 'user@example.com')
+   * @returns Найденные записи. Кидает ошибку, если записи не найдены или произошла ошибка
+   */
+  async getAllByIndex<R>(
+    tableName: string,
+    indexName: string,
+    key: string,
+  ): Promise<R[]> {
+    const transaction = await this.openTransaction(tableName, "readonly");
+    const store = transaction.objectStore(tableName);
+    const index = store.index(indexName);
+
+    const request = index.getAll(IDBKeyRange.only(key));
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Добавляет новую запись в objectStore.
+   * @param tableName Имя objectStore (таблицы)
+   * @param data Объект с `id` (или auto-increment) и данными
+   * @returns Сгенерированная запись. ⚠️Важно:Ошибка при добавление с существующим ID
+   */
   async add<D extends object>(
     tableName: string,
     data: WithIdData<D>,
@@ -98,6 +159,12 @@ class IndexBd {
     });
   }
 
+  /**
+   * Добавляет несколько новых записей в objectStore.
+   * @param tableName Имя objectStore (таблицы)
+   * @param data Массив объектов с `id` (или auto-increment) и данными
+   * @returns Массив сгенерированных записей. ⚠️Если **хоть одна** запись имеет дублирующийся ID → вся транзакция откатывается
+   */
   async addAll<D extends object>(
     tableName: string,
     data: WithIdData<D>[],
