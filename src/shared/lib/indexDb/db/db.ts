@@ -1,12 +1,6 @@
 import { creatableTables } from "../config/creatableTables";
 
-type WithIdData<T extends object> = T;
-
-/* TODO: + 1) добавить атомарность (все или ничего для all методов, для консистентности данных)
- *       2) ПОдумать над возвращаемыми ошибками
- *       3) Подумать над типизацией WithIdData и ошибок
- *       4) Подмуть над передачей уникального ключа
- * */
+type ReturnData<T extends object> = T;
 
 class IndexBd {
   // Использовать только целые числа для версии бд (читай доку)
@@ -63,14 +57,14 @@ class IndexBd {
   /**
    * Поиск записи по первичному ключу (ID).
    * @param tableName Имя objectStore (таблицы)
-   * @param key Первичный ключ записи (ID строки)
+   * @param id Первичный ключ записи (ID строки)
    * @returns Найденную запись. Кидает ошибку, если запись не найдена или произошла ошибка
    */
-  async getById<R>(tableName: string, key: string): Promise<R> {
+  async getById<R>(tableName: string, id: number): Promise<R | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
 
-    const request = store.get(key);
+    const request = store.get(id);
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => resolve(request.result);
       transaction.onerror = () => reject(request.error);
@@ -88,7 +82,7 @@ class IndexBd {
     tableName: string,
     indexName: string,
     key: string,
-  ): Promise<R> {
+  ): Promise<R | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
     const index = store.index(indexName);
@@ -105,7 +99,7 @@ class IndexBd {
    * @param tableName Имя objectStore (таблицы)
    * @returns Найденные записи. Кидает ошибку, если записи не найдены или произошла ошибка
    */
-  async getAll<R>(tableName: string): Promise<R[]> {
+  async getAll<R>(tableName: string): Promise<R[] | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
 
@@ -127,7 +121,7 @@ class IndexBd {
     tableName: string,
     indexName: string,
     key: string,
-  ): Promise<R[]> {
+  ): Promise<R[] | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
     const index = store.index(indexName);
@@ -143,12 +137,12 @@ class IndexBd {
    * Добавляет новую запись в objectStore.
    * @param tableName Имя objectStore (таблицы)
    * @param data Объект с `id` (или auto-increment) и данными
-   * @returns Сгенерированная запись. ⚠️Важно:Ошибка при добавление с существующим ID
+   * @returns Сгенерированная запись. Кидает ошибку, для записи с существующим ID
    */
   async add<D extends object>(
     tableName: string,
-    data: WithIdData<D>,
-  ): Promise<IDBValidKey> {
+    data: ReturnData<D>,
+  ): Promise<IDBValidKey | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
@@ -163,12 +157,12 @@ class IndexBd {
    * Добавляет несколько новых записей в objectStore.
    * @param tableName Имя objectStore (таблицы)
    * @param data Массив объектов с `id` (или auto-increment) и данными
-   * @returns Массив сгенерированных записей. ⚠️Если **хоть одна** запись имеет дублирующийся ID → вся транзакция откатывается
+   * @returns Массив сгенерированных записей или ошибку. Если **хоть одна** запись имеет дублирующийся ID, то вся транзакция откатывается
    */
   async addAll<D extends object>(
     tableName: string,
-    data: WithIdData<D>[],
-  ): Promise<IDBValidKey[]> {
+    data: ReturnData<D>[],
+  ): Promise<IDBValidKey[] | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
@@ -184,10 +178,16 @@ class IndexBd {
     });
   }
 
+  /**
+   * Обвновляет запись в objectStore. Если такой записи нет, то создает ее
+   * @param tableName Имя objectStore (таблицы)
+   * @param data Объект с `id` (или auto-increment) и данными
+   * @returns Сгенерированная запись. Кидает ошибку, если произошла ошибка при транкзации
+   */
   async put<D extends object>(
     tableName: string,
-    data: WithIdData<D>,
-  ): Promise<IDBValidKey> {
+    data: ReturnData<D>,
+  ): Promise<IDBValidKey | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
@@ -199,9 +199,15 @@ class IndexBd {
     });
   }
 
+  /**
+   * Обвновляет записи в objectStore. Если записей/записи нет, то создает ее
+   * @param tableName Имя objectStore (таблицы)
+   * @param data Объект с `id` (или auto-increment) и данными
+   * @returns Массив обновленных записе. Кидает ошибку, если произошла ошибка при транкзации
+   */
   async putAll<D extends object>(
     tableName: string,
-    data: WithIdData<D>[],
+    data: ReturnData<D>[],
   ): Promise<IDBValidKey[]> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
@@ -218,14 +224,90 @@ class IndexBd {
     });
   }
 
-  async delete(tableName: string, key: string): Promise<void> {
+  /**
+   * Удаление по первичному ключу (ID).
+   * @param tableName Имя objectStore (таблицы)
+   * @param id Первичный ключ записи (ID строки)
+   * @returns undefined. Кидает ошибку, если запись не найдена или произошла ошибка
+   */
+  async delete(
+    tableName: string,
+    id: number,
+  ): Promise<undefined | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
-    const request = store.delete(key);
+    const request = store.delete(id);
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => resolve(request.result);
       transaction.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Удаляет запись с соответствующим значением индекса.
+   * @param tableName Имя objectStore (таблицы)
+   * @param indexName Имя индекса (например, 'byEmail')
+   * @param key Значение индекса (например, 'user@example.com')
+   * @returns Ничего или ошибку
+   */
+  async deleteByIndex(
+    tableName: string,
+    indexName: string,
+    key: string,
+  ): Promise<undefined | DOMException> {
+    const transaction = await this.openTransaction(tableName, "readwrite");
+    const store = transaction.objectStore(tableName);
+    const index = store.index(indexName);
+    const request = index.get(key);
+
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const item = request.result;
+        const deleteRequest = store.delete(item.id);
+
+        transaction.oncomplete = () => resolve(deleteRequest.result);
+        transaction.onerror = () => reject(transaction.error);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Удаляет все записи, соответствующие значению индекса.
+   * @param tableName Имя objectStore (таблицы)
+   * @param indexName Имя индекса (например, 'byEmail')
+   * @param key Значение индекса (например, 'user@example.com')
+   * @returns Количество удалённых записей или ошибку
+   */
+  async deleteAllByIndex(
+    tableName: string,
+    indexName: string,
+    key: string,
+  ): Promise<number | DOMException> {
+    const transaction = await this.openTransaction(tableName, "readwrite");
+    const store = transaction.objectStore(tableName);
+    const index = store.index(indexName);
+    const request = index.getAll(IDBKeyRange.only(key));
+
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const items = request.result;
+        if (!items.length) {
+          resolve(0);
+          return;
+        }
+
+        let deletedCount = 0;
+        items.forEach((item) => {
+          const deleteRequest = store.delete(item.id);
+          deleteRequest.onsuccess = () => deletedCount++;
+        });
+
+        transaction.oncomplete = () => resolve(deletedCount);
+        transaction.onerror = () => reject(transaction.error);
+      };
+      request.onerror = () => reject(request.error);
     });
   }
 
