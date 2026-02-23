@@ -3,7 +3,7 @@ import { creatableTables } from "../config/creatableTables";
 type ReturnData<T extends object> = T;
 
 class IndexBd {
-  // Использовать только целые числа для версии бд (читай доку)
+  // Использовать только целые числа для версии бд (читай доку), в том числе при миграции
   private _storeName = "geo_db";
   private _version = 1;
   private _db: IDBDatabase | null = null;
@@ -58,9 +58,12 @@ class IndexBd {
    * Поиск записи по первичному ключу (ID).
    * @param tableName Имя objectStore (таблицы)
    * @param id Первичный ключ записи (ID строки)
-   * @returns Найденную запись. Кидает ошибку, если запись не найдена или произошла ошибка
+   * @returns Найденную запись или undefined. Кидает ошибку, если произошла ошибка
    */
-  async getById<R>(tableName: string, id: number): Promise<R | DOMException> {
+  async getById<R>(
+    tableName: string,
+    id: number,
+  ): Promise<R | undefined | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
 
@@ -76,13 +79,13 @@ class IndexBd {
    * @param tableName Имя objectStore (таблицы)
    * @param indexName Имя индекса, созданного в onupgradeneeded (например, 'byEmail')
    * @param key Значение для поиска в индексированном поле (например, 'user@example.com')
-   * @returns Найденную запись. Кидает ошибку, если запись не найдена или произошла ошибка
+   * @returns Найденную запись или undefined. Кидает ошибку, если произошла ошибка
    */
   async getByIndex<R>(
     tableName: string,
     indexName: string,
     key: string,
-  ): Promise<R | DOMException> {
+  ): Promise<R | undefined | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
     const index = store.index(indexName);
@@ -97,7 +100,7 @@ class IndexBd {
   /**
    * Поиск записи по индексу (не primary key).
    * @param tableName Имя objectStore (таблицы)
-   * @returns Найденные записи. Кидает ошибку, если записи не найдены или произошла ошибка
+   * @returns Найденные записи или пустой массив. Кидает ошибку, если произошла ошибка
    */
   async getAll<R>(tableName: string): Promise<R[] | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
@@ -115,7 +118,7 @@ class IndexBd {
    * @param tableName Имя objectStore (таблицы)
    * @param indexName Имя индекса, созданного в onupgradeneeded (например, 'byEmail')
    * @param key Значение для поиска в индексированном поле (например, 'user@example.com')
-   * @returns Найденные записи. Кидает ошибку, если записи не найдены или произошла ошибка
+   * @returns Найденные записи или пустой массив. Кидает ошибку, если произошла ошибка
    */
   async getAllByIndex<R>(
     tableName: string,
@@ -249,7 +252,7 @@ class IndexBd {
    * @param tableName Имя objectStore (таблицы)
    * @param indexName Имя индекса (например, 'byEmail')
    * @param key Значение индекса (например, 'user@example.com')
-   * @returns Ничего или ошибку
+   * @returns undefined. Кидает ошибку, если запись не найдена или произошла ошибка
    */
   async deleteByIndex(
     tableName: string,
