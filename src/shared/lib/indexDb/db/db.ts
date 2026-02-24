@@ -141,18 +141,18 @@ class IndexBd {
    * Добавляет новую запись в objectStore.
    * @param tableName Имя objectStore (таблицы)
    * @param data Объект с `id` (или auto-increment) и данными
-   * @returns Сгенерированная запись. Кидает ошибку, для записи с существующим ID
+   * @returns Результат запроса. Кидает ошибку, для записи с существующим ID
    */
   async add<D extends object>(
     tableName: string,
     data: Data<D>,
-  ): Promise<IDBValidKey | DOMException> {
+  ): Promise<IDBRequest | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
     const request = store.add(data);
     return new Promise((resolve, reject) => {
-      transaction.oncomplete = () => resolve(request.result);
+      transaction.oncomplete = () => resolve(request);
       transaction.onerror = () => reject(request.error);
     });
   }
@@ -161,19 +161,19 @@ class IndexBd {
    * Добавляет несколько новых записей в objectStore.
    * @param tableName Имя objectStore (таблицы)
    * @param data Массив объектов с `id` (или auto-increment) и данными
-   * @returns Массив сгенерированных записей или ошибку. Если **хоть одна** запись имеет дублирующийся ID, то вся транзакция откатывается
+   * @returns Массив результатов запросов или ошибку. Если **хоть одна** запись имеет дублирующийся ID, то вся транзакция откатывается
    */
   async addAll<D extends object>(
     tableName: string,
     data: Data<D>[],
-  ): Promise<IDBValidKey[] | DOMException> {
+  ): Promise<IDBRequest[] | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
-    const result: IDBValidKey[] = [];
+    const result: IDBRequest[] = [];
     data.forEach((item) => {
       const request = store.add(item);
-      request.onsuccess = () => result.push(request.result);
+      request.onsuccess = () => result.push(request);
       request.onerror = () => console.error(request.error);
     });
 
@@ -187,19 +187,19 @@ class IndexBd {
    * Обвновляет запись в objectStore. Если такой записи нет, то создает ее
    * @param tableName Имя objectStore (таблицы)
    * @param data Объект с `id` (или auto-increment) и данными
-   * @returns Сгенерированная запись. Кидает ошибку, если произошла ошибка при транкзации
+   * @returns Результат запроса. Кидает ошибку, если произошла ошибка при транкзации
    */
   async put<D extends { id: ID }>(
     tableName: string,
     data: Data<D>,
-  ): Promise<IDBValidKey | DOMException> {
+  ): Promise<IDBRequest | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
     //В put не нужен второй аргумент, т.к в creatableTables указан keyPath (ну если он указан)
     const request = store.put(data);
     return new Promise((resolve, reject) => {
-      transaction.oncomplete = () => resolve(request.result);
+      transaction.oncomplete = () => resolve(request);
       transaction.onerror = () => reject(request.error);
     });
   }
@@ -208,19 +208,19 @@ class IndexBd {
    * Обвновляет записи в objectStore. Если записей/записи нет, то создает ее
    * @param tableName Имя objectStore (таблицы)
    * @param data Объект с `id` (или auto-increment) и данными
-   * @returns Массив обновленных записе. Кидает ошибку, если произошла ошибка при транкзации
+   * @returns Массив результатов запросов. Кидает ошибку, если произошла ошибка при транкзации
    */
   async putAll<D extends { id: ID }>(
     tableName: string,
     data: Data<D>[],
-  ): Promise<IDBValidKey[]> {
+  ): Promise<IDBRequest[]> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
-    const result: IDBValidKey[] = [];
+    const result: IDBRequest[] = [];
     data.forEach((item) => {
       const request = store.put(item);
-      request.onsuccess = () => result.push(request.result);
+      request.onsuccess = () => result.push(request);
       request.onerror = () => console.error(request.error);
     });
 
