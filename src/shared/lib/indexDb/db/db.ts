@@ -1,6 +1,7 @@
 import { creatableTables } from "../config/creatableTables";
 
-type ReturnData<T extends object> = T;
+type Data<T extends object> = T;
+type ID = string | number;
 
 class IndexBd {
   // Использовать только целые числа для версии бд (читай доку), в том числе при миграции
@@ -62,7 +63,7 @@ class IndexBd {
    */
   async getById<R>(
     tableName: string,
-    id: number,
+    id: ID,
   ): Promise<R | undefined | DOMException> {
     const transaction = await this.openTransaction(tableName, "readonly");
     const store = transaction.objectStore(tableName);
@@ -144,7 +145,7 @@ class IndexBd {
    */
   async add<D extends object>(
     tableName: string,
-    data: ReturnData<D>,
+    data: Data<D>,
   ): Promise<IDBValidKey | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
@@ -164,7 +165,7 @@ class IndexBd {
    */
   async addAll<D extends object>(
     tableName: string,
-    data: ReturnData<D>[],
+    data: Data<D>[],
   ): Promise<IDBValidKey[] | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
@@ -173,6 +174,7 @@ class IndexBd {
     data.forEach((item) => {
       const request = store.add(item);
       request.onsuccess = () => result.push(request.result);
+      request.onerror = () => console.error(request.error);
     });
 
     return new Promise((resolve, reject) => {
@@ -187,9 +189,9 @@ class IndexBd {
    * @param data Объект с `id` (или auto-increment) и данными
    * @returns Сгенерированная запись. Кидает ошибку, если произошла ошибка при транкзации
    */
-  async put<D extends object>(
+  async put<D extends { id: ID }>(
     tableName: string,
-    data: ReturnData<D>,
+    data: Data<D>,
   ): Promise<IDBValidKey | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
@@ -208,9 +210,9 @@ class IndexBd {
    * @param data Объект с `id` (или auto-increment) и данными
    * @returns Массив обновленных записе. Кидает ошибку, если произошла ошибка при транкзации
    */
-  async putAll<D extends object>(
+  async putAll<D extends { id: ID }>(
     tableName: string,
-    data: ReturnData<D>[],
+    data: Data<D>[],
   ): Promise<IDBValidKey[]> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
@@ -219,6 +221,7 @@ class IndexBd {
     data.forEach((item) => {
       const request = store.put(item);
       request.onsuccess = () => result.push(request.result);
+      request.onerror = () => console.error(request.error);
     });
 
     return new Promise((resolve, reject) => {
@@ -233,10 +236,7 @@ class IndexBd {
    * @param id Первичный ключ записи (ID строки)
    * @returns undefined. Кидает ошибку, если запись не найдена или произошла ошибка
    */
-  async delete(
-    tableName: string,
-    id: number,
-  ): Promise<undefined | DOMException> {
+  async delete(tableName: string, id: ID): Promise<undefined | DOMException> {
     const transaction = await this.openTransaction(tableName);
     const store = transaction.objectStore(tableName);
 
@@ -305,6 +305,7 @@ class IndexBd {
         items.forEach((item) => {
           const deleteRequest = store.delete(item.id);
           deleteRequest.onsuccess = () => deletedCount++;
+          deleteRequest.onerror = () => console.error(deleteRequest.error);
         });
 
         transaction.oncomplete = () => resolve(deletedCount);
