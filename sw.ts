@@ -1,17 +1,16 @@
+/// <reference no-default-lib="true"/>
+/// <reference lib="webworker" />
+
 import { swBuilder } from "./src/shared/lib/serviceWorker";
 import { indexBd } from "./src/shared/lib/indexDb";
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(swBuilder.deleteOldCaches());
+self.addEventListener("activate", (event: ExtendableEvent) => {
+  event.waitUntil(swBuilder.deleteOldCacheVersion());
 });
 
-self.addEventListener("install", async (event) => {
+self.addEventListener("install", async (event: ExtendableEvent) => {
   await indexBd.openBd();
   event.waitUntil(
-    swBuilder.addResourcesToCache(["./index.html", "@mantine/core/styles.css"]),
+    swBuilder.addResourcesToCache(["./index.html", "/index.html"]),
   );
-});
-
-self.addEventListener("fetch", (event) => {
-  event.respondWith(swBuilder.networkWrapper(event.request, event));
 });
