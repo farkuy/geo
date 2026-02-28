@@ -7,12 +7,12 @@ export class SwCache {
 
   async addAll(requests: RequestInfo[]) {
     const cache = await caches.open(this._key);
-    await cache.addAll(requests);
+    return await cache.addAll(requests);
   }
 
   async put(request: RequestInfo | URL, response: Response) {
     const cache = await caches.open(this._key);
-    await cache.put(request, response);
+    return await cache.put(request, response);
   }
 
   async match(request: RequestInfo | URL, options?: CacheQueryOptions) {
@@ -32,3 +32,5 @@ export class SwCache {
     return this._key;
   }
 }
+
+export const cache = new SwCache("geo");
